@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import traceback
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -28,6 +29,7 @@ TEMP_DIR.mkdir(exist_ok=True)
 # Initialize the sampler
 hunyuan_video_sampler = HunyuanVideoSampler.from_pretrained(models_root_path, args=args)
 args = hunyuan_video_sampler.args  # Get updated args
+args.flow_reverse = True
 
 class VideoRequest(BaseModel):
     prompt: str
@@ -71,15 +73,14 @@ async def generate_video(request: VideoRequest):
         save_videos_grid(samples[0].unsqueeze(0), str(temp_path), fps=24)
         
         # Return the video file and schedule cleanup
-        # return FileResponse(
-        #     path=temp_path,
-        #     filename=filename,
-        #     media_type="video/mp4",
-        #     background=cleanup_file(temp_path)
-        # )
+        return FileResponse(
+            path=temp_path,
+            filename=filename,
+            media_type="video/mp4"
+        )
 
     except Exception as e:
-        logger.error(f"Error generating video: {str(e)}")
+        logger.error(f"Error generating video: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 async def cleanup_file(file_path: Path):
